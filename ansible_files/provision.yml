@@ -1,0 +1,25 @@
+---
+- name: Install, enable and start Docker
+  hosts: provisioner_instance
+  become: yes
+  remote_user: ec2-user
+  tasks:
+  - name: Install Docker with YUM from the pre-installed Amazon repo
+    yum:
+      name: docker
+      state: present
+  - name: Enable and start Docker
+    systemd:
+      name: docker
+      enabled: yes
+      state: started
+
+- name: Install PostgreSQL server
+  hosts: provisioner_instance
+  become: yes
+  remote_user: ec2-user
+  tasks:
+  - name: Install postgresql-server with YUM
+    yum:
+      name: postgresql-server
+      state: present
