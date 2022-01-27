@@ -1,11 +1,11 @@
 resource "aws_efs_file_system" "efs" {
-  creation_token = var.efs_name
+  creation_token = join("-", [var.tag_prefix, "efs"])
   encrypted      = false
 
   tags = {
     Name = join("-", [
       var.tag_prefix,
-      var.efs_name
+      "efs"
     ])
   }
 }
@@ -25,24 +25,6 @@ resource "aws_efs_file_system_policy" "policy" {
     }]
   })
 }
-
-/* resource "aws_efs_access_point" "access_point" {
-  file_system_id = aws_efs_file_system.efs.id
-  posix_user {
-    uid = 2002
-    gid = 2002
-  }
-
-  tags = {
-    Name = join("-", [
-      var.tag_prefix,
-      "confluence",
-      "efs",
-      "access",
-      "point"
-    ])
-  }
-} */
 
 resource "aws_efs_mount_target" "mount_targets" {
   count = length(var.subnet_ids)

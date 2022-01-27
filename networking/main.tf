@@ -33,7 +33,7 @@ resource "aws_subnet" "public_subnet_az_1" {
       "az",
       substr(lookup(var.subnet_data[0], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[0], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[0], "public") ? "public" : "private"
   }
 }
 
@@ -52,7 +52,7 @@ resource "aws_subnet" "public_subnet_az_2" {
       "az",
       substr(lookup(var.subnet_data[1], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[1], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[1], "public") ? "public" : "private"
   }
 }
 
@@ -71,11 +71,11 @@ resource "aws_subnet" "public_subnet_az_3" {
       "az",
       substr(lookup(var.subnet_data[2], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[2], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[2], "public") ? "public" : "private"
   }
 }
 
-resource "aws_subnet" "private_subnet_az_1" {
+resource "aws_subnet" "database_subnet_az_1" {
   vpc_id = aws_vpc.vpc.id
 
   cidr_block              = lookup(var.subnet_data[3], "cidr_block")
@@ -85,16 +85,16 @@ resource "aws_subnet" "private_subnet_az_1" {
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
-      "private",
+      "database",
       "subnet",
       "az",
       substr(lookup(var.subnet_data[3], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[3], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[3], "public") ? "public" : "private"
   }
 }
 
-resource "aws_subnet" "private_subnet_az_2" {
+resource "aws_subnet" "database_subnet_az_2" {
   vpc_id = aws_vpc.vpc.id
 
   cidr_block              = lookup(var.subnet_data[4], "cidr_block")
@@ -104,16 +104,16 @@ resource "aws_subnet" "private_subnet_az_2" {
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
-      "private",
+      "database",
       "subnet",
       "az",
       substr(lookup(var.subnet_data[4], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[4], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[4], "public") ? "public" : "private"
   }
 }
 
-resource "aws_subnet" "private_subnet_az_3" {
+resource "aws_subnet" "database_subnet_az_3" {
   vpc_id = aws_vpc.vpc.id
 
   cidr_block              = lookup(var.subnet_data[5], "cidr_block")
@@ -123,12 +123,12 @@ resource "aws_subnet" "private_subnet_az_3" {
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
-      "private",
+      "database",
       "subnet",
       "az",
       substr(lookup(var.subnet_data[5], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[5], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[5], "public") ? "public" : "private"
   }
 }
 
@@ -147,7 +147,7 @@ resource "aws_subnet" "fargate_subnet_az_1" {
       "az",
       substr(lookup(var.subnet_data[6], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[6], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[6], "public") ? "public" : "private"
   }
 }
 
@@ -166,7 +166,7 @@ resource "aws_subnet" "fargate_subnet_az_2" {
       "az",
       substr(lookup(var.subnet_data[7], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[7], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[7], "public") ? "public" : "private"
   }
 }
 
@@ -185,7 +185,7 @@ resource "aws_subnet" "fargate_subnet_az_3" {
       "az",
       substr(lookup(var.subnet_data[8], "availability_zone"), -1, -1)
     ])
-    "Type" = lookup(var.subnet_data[8], "public") == true ? "public" : "private"
+    "Type" = lookup(var.subnet_data[8], "public") ? "public" : "private"
   }
 }
 
@@ -227,18 +227,18 @@ resource "aws_route_table_association" "public_az_3_rt_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-resource "aws_route_table_association" "private_az_1_rt_assoc" {
-  subnet_id      = aws_subnet.private_subnet_az_1.id
+resource "aws_route_table_association" "database_az_1_rt_assoc" {
+  subnet_id      = aws_subnet.database_subnet_az_1.id
   route_table_id = aws_route_table.private_rt.id
 }
 
-resource "aws_route_table_association" "private_az_2_rt_assoc" {
-  subnet_id      = aws_subnet.private_subnet_az_2.id
+resource "aws_route_table_association" "database_az_2_rt_assoc" {
+  subnet_id      = aws_subnet.database_subnet_az_2.id
   route_table_id = aws_route_table.private_rt.id
 }
 
-resource "aws_route_table_association" "private_az_3_rt_assoc" {
-  subnet_id      = aws_subnet.private_subnet_az_3.id
+resource "aws_route_table_association" "database_az_3_rt_assoc" {
+  subnet_id      = aws_subnet.database_subnet_az_3.id
   route_table_id = aws_route_table.private_rt.id
 }
 
@@ -263,17 +263,15 @@ resource "aws_security_group" "server_security_group" {
   name = join("-", [
     var.tag_prefix,
     "server",
-    "security",
-    "group"
+    "sg"
   ])
-  description = "Security group for Confluence server instances."
+  description = "Security group for Confluence server container tasks."
 
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
       "server",
-      "security",
-      "group"
+      "sg"
     ])
   }
 }
@@ -308,6 +306,16 @@ resource "aws_security_group_rule" "server_sg_ingress_8090" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "server_sg_ingress_8091" {
+  security_group_id = aws_security_group.server_security_group.id
+  description       = "Allows inbound traffic on port 8091 for Synchrony from anywhere."
+  type              = "ingress"
+  from_port         = 8091
+  to_port           = 8091
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
 resource "aws_security_group_rule" "server_sg_ingress_2049" {
   security_group_id = aws_security_group.server_security_group.id
   description       = "Allows inbound traffic on port 2049 from VPC."
@@ -332,18 +340,16 @@ resource "aws_security_group" "database_security_group" {
   vpc_id = aws_vpc.vpc.id
   name = join("-", [
     var.tag_prefix,
-    "db",
-    "security",
-    "group"
+    "database",
+    "sg"
   ])
   description = "Security group for PostgreSQL RDS database instances."
 
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
-      "db",
-      "security",
-      "group"
+      "database",
+      "sg"
     ])
   }
 }
@@ -383,8 +389,7 @@ resource "aws_security_group" "load_balancer_security_group" {
   name = join("-", [
     var.tag_prefix,
     "lb",
-    "security",
-    "group"
+    "sg"
   ])
   description = "Security group for the load balancer."
 
@@ -392,8 +397,7 @@ resource "aws_security_group" "load_balancer_security_group" {
     "Name" = join("-", [
       var.tag_prefix,
       "lb",
-      "security",
-      "group"
+      "sg"
     ])
   }
 }
@@ -423,8 +427,7 @@ resource "aws_security_group" "efs_security_group" {
   name = join("-", [
     var.tag_prefix,
     "efs",
-    "security",
-    "group"
+    "sg"
   ])
   description = "Security group for the Elastic FileSystem."
 
@@ -432,8 +435,7 @@ resource "aws_security_group" "efs_security_group" {
     "Name" = join("-", [
       var.tag_prefix,
       "efs",
-      "security",
-      "group"
+      "sg"
     ])
   }
 }
@@ -464,8 +466,7 @@ resource "aws_security_group" "vpc_endpoint_security_group" {
     var.tag_prefix,
     "vpc",
     "endpoint",
-    "security",
-    "group"
+    "sg"
   ])
   description = "Security group for the VPC endpoints."
 
@@ -474,8 +475,7 @@ resource "aws_security_group" "vpc_endpoint_security_group" {
       var.tag_prefix,
       "vpc",
       "endpoints",
-      "security",
-      "group"
+      "sg"
     ])
   }
 }
@@ -495,9 +495,7 @@ resource "aws_security_group" "provisioner_instance_security_group" {
   name = join("-", [
     var.tag_prefix,
     "provisioner",
-    "instance",
-    "security",
-    "group"
+    "sg"
   ])
   description = "Security group for the provisioner EC2 instance."
 
@@ -505,9 +503,7 @@ resource "aws_security_group" "provisioner_instance_security_group" {
     "Name" = join("-", [
       var.tag_prefix,
       "provisioner",
-      "instance",
-      "security",
-      "group"
+      "sg"
     ])
   }
 }
@@ -522,15 +518,6 @@ resource "aws_security_group_rule" "provisioner_instance_sg_ingress_ssh" {
   cidr_blocks       = [var.my_ip]
 }
 
-resource "aws_security_group_rule" "provisioner_instance_sg_ingress_HTTP" {
-  security_group_id = aws_security_group.provisioner_instance_security_group.id
-  description       = "Allows inbound HTTP traffic on port 80 from anywhere."
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
 
 resource "aws_security_group_rule" "provisioner_instance_sg_egress" {
   security_group_id = aws_security_group.provisioner_instance_security_group.id

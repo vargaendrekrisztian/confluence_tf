@@ -55,14 +55,7 @@ data "aws_iam_policy_document" "inline_policy_fargate" {
       "logs:PutLogEvents",
       "ssm:GetParameter*",
       "secretsmanager:GetSecretValue",
-      "kms:Decrypt"
-    ]
-    effect    = "Allow"
-    resources = ["*"]
-  }
-  statement {
-    sid = "InlinePolicyForConfluenceEFS"
-    actions = [
+      "kms:Decrypt",
       "elasticfilesystem:DescribeFileSystems",
       "elasticfilesystem:ClientMount",
       "elasticfilesystem:ClientWrite",
@@ -74,7 +67,7 @@ data "aws_iam_policy_document" "inline_policy_fargate" {
 }
 
 resource "aws_iam_role" "task_definition_role" {
-  name               = var.iam_task_definition_role_name
+  name               = "TaskDefinitionRole"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy_fargate.json
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonS3FullAccess"
@@ -96,7 +89,7 @@ resource "aws_iam_role" "task_definition_role" {
 }
 
 resource "aws_iam_role" "provisioner_instance_role" {
-  name               = var.iam_provisioner_instance_role_name
+  name               = "ProvisionerRole"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy_provisioner_instance.json
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
@@ -119,6 +112,6 @@ resource "aws_iam_role" "provisioner_instance_role" {
 }
 
 resource "aws_iam_instance_profile" "provisioner_instance_profile" {
-  name = var.iam_provisioner_instance_profile_name
+  name = "ProvisionerInstanceProfile"
   role = aws_iam_role.provisioner_instance_role.name
 }

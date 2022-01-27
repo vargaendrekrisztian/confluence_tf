@@ -1,0 +1,5 @@
+/confluencekey
+/confluencekey.pub
+ansible_files/inventory
+ansible_files/ecr_docker.yml
+ansible_files/upload_user_dataű.yml

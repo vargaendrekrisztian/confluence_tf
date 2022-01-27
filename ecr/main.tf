@@ -1,11 +1,19 @@
+data "aws_ssm_parameter" "access_key_id" {
+  name = var.access_key_id_secret_name
+}
+
+data "aws_ssm_parameter" "secret_access_key" {
+  name = var.secret_access_key_secret_name
+}
+
 resource "aws_ecr_repository" "ecr" {
-  name                 = var.ecr_repo_name
-  image_tag_mutability = var.ecr_image_tag_mutability
+  name                 = join("-", [var.tag_prefix, "repo"])
+  image_tag_mutability = "MUTABLE"
 
   tags = {
     Name = join("-", [
       var.tag_prefix,
-      var.ecr_repo_name
+      "repo"
     ])
   }
 }
@@ -45,8 +53,8 @@ resource "local_file" "ecr_docker_playbook" {
   content = templatefile(
     "${path.root}/ansible_files/ecr_docker.yml.tpl",
     {
-      access_key_id     = var.access_key_id
-      secret_access_key = var.secret_access_key
+      access_key_id     = data.aws_ssm_parameter.access_key_id.value
+      secret_access_key = data.aws_ssm_parameter.secret_access_key.value
       original_image    = var.docker_image_tag != "" ? local.docker_image_ref : var.docker_image_name
       ecr_image_name    = local.docker_tagged_image_name
       account_id        = var.aws_account_id

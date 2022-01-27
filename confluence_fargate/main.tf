@@ -4,27 +4,29 @@ data "aws_ssm_parameter" "db_password" {
 }
 
 resource "aws_cloudwatch_log_group" "fargate_log_group" {
-  count             = var.fargate_log_group_exists == false ? 1 : 0
-  name              = var.fargate_log_group_name
+  count             = var.fargate_log_group_exists ? 0 : 1
+  name              = join("-", [var.tag_prefix, "fargate", "log", "group"])
   retention_in_days = var.fargate_log_group_retention_days
 
   tags = {
     Name = join("-", [
       var.tag_prefix,
-      var.fargate_log_group_name
+      "fargate",
+      "log",
+      "group"
     ])
   }
 }
 
 resource "aws_ecs_cluster" "fargate_cluster" {
-  name               = var.cluster_name
+  name               = "ConfluenceFargateCluster"
   capacity_providers = ["FARGATE"]
 
   configuration {
     execute_command_configuration {
       logging = "OVERRIDE"
       log_configuration {
-        cloud_watch_log_group_name = var.fargate_log_group_exists == true ? var.fargate_log_group_name : aws_cloudwatch_log_group.fargate_log_group[0].name
+        cloud_watch_log_group_name = var.fargate_log_group_exists ? join("-", [var.tag_prefix, "fargate", "log", "group"]) : aws_cloudwatch_log_group.fargate_log_group[0].name
       }
     }
   }
@@ -45,7 +47,7 @@ resource "aws_ecs_cluster" "fargate_cluster" {
 }
 
 resource "aws_ecs_task_definition" "task_definition" {
-  family                   = var.task_def_service_name
+  family                   = "ConfluenceFargateService"
   requires_compatibilities = ["FARGATE"]
 
   execution_role_arn = var.task_def_execution_role_arn
@@ -56,7 +58,7 @@ resource "aws_ecs_task_definition" "task_definition" {
   network_mode = "awsvpc"
 
   volume {
-    name = var.container_volume_efs_name
+    name = "ConfluenceEFSContainerMount"
 
     efs_volume_configuration {
       file_system_id = var.container_volume_efs_id
@@ -65,19 +67,22 @@ resource "aws_ecs_task_definition" "task_definition" {
 
   container_definitions = jsonencode([
     {
-      name      = var.container_name
+      name      = "ConfluenceContainer"
       image     = var.container_image
       cpu       = var.container_cpu_constraint
       memory    = var.container_memory_constraint
       essential = true
       portMappings = [
         {
-          containerPort = var.container_port
+          containerPort = 8090
+        },
+        {
+          containerPort = 8091
         }
       ],
       mountPoints = [
         {
-          sourceVolume  = var.container_volume_efs_name
+          sourceVolume  = "ConfluenceEFSContainerMount"
           containerPath = "/var/atlassian/application-data/confluence"
         }
       ],
@@ -85,12 +90,16 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs"
         options = {
           awslogs-region        = var.region
-          awslogs-group         = var.fargate_log_group_name
-          awslogs-stream-prefix = var.task_def_service_name
+          awslogs-group         = var.fargate_log_group_exists ? join("-", [var.tag_prefix, "fargate", "log", "group"]) : aws_cloudwatch_log_group.fargate_log_group[0].name
+          awslogs-stream-prefix = "ConfluenceFargateService"
         }
       }
       environment = [
-        { "name" : "ATL_DB_TYPE", "value" : var.container_db_client_type },
+        { "name" : "ATL_PROXY_NAME", "value" : var.container_lb_dns_name },
+        { "name" : "ATL_PROXY_PORT", "value" : "80" },
+        { "name" : "ATL_TOMCAT_SCHEME", "value" : "http" },
+        { "name" : "ATL_TOMCAT_SECURE", "value" : "false"},
+        { "name" : "ATL_DB_TYPE", "value" : "postgresql" },
         { "name" : "ATL_JDBC_URL", "value" : join("", ["jdbc:postgresql://", var.container_db_url, "/", var.container_db_name]) },
         { "name" : "ATL_JDBC_USER", "value" : var.container_db_user },
         { "name" : "ATL_JDBC_PASSWORD", "value" : data.aws_ssm_parameter.db_password.value },
@@ -102,13 +111,13 @@ resource "aws_ecs_task_definition" "task_definition" {
   tags = {
     Name = join("-", [
       var.tag_prefix,
-      var.task_def_service_name
+      "ConfluenceFargateService"
     ])
   }
 }
 
 resource "aws_ecs_service" "service" {
-  name            = var.task_def_service_name
+  name            = "ConfluenceFargateService"
   cluster         = aws_ecs_cluster.fargate_cluster.id
   task_definition = aws_ecs_task_definition.task_definition.arn
 
@@ -118,8 +127,8 @@ resource "aws_ecs_service" "service" {
 
   load_balancer {
     target_group_arn = var.target_group_arn
-    container_name   = var.container_name
-    container_port   = var.container_port
+    container_name   = "ConfluenceContainer"
+    container_port   = 8090
   }
 
   network_configuration {

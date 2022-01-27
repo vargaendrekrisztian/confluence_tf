@@ -10,8 +10,7 @@ resource "aws_instance" "provisioner_instance" {
   tags = {
     "Name" = join("-", [
       var.tag_prefix,
-      "provisioner",
-      "instance"
+      "provisioner"
     ])
   }
 }
@@ -33,7 +32,7 @@ resource "local_file" "inventory" {
   content = templatefile(
     "${path.root}/ansible_files/inventory.tpl",
     {
-      inv_tmp_instance_public_ip = aws_instance.provisioner_instance.public_ip
+      instance_public_ip = aws_instance.provisioner_instance.public_ip
     }
   )
   filename = "${path.root}/ansible_files/inventory"

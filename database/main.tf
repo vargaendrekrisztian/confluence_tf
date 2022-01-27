@@ -13,18 +13,19 @@ resource "aws_db_subnet_group" "subnet_group" {
 }
 
 resource "aws_db_instance" "database" {
-  identifier        = join("-", [var.tag_prefix, "db", var.db_engine])
+  identifier        = join("-", [var.tag_prefix, "db", "postgres"])
   instance_class    = var.db_instance_type
   allocated_storage = var.db_allocated_storage
 
-  engine         = var.db_engine
-  engine_version = var.db_engine_version
-  port           = var.db_port
+  engine         = "postgres"
+  engine_version = "10.15"
+  port           = "5432"
 
   username = var.db_user
   name     = var.db_name
   password = data.aws_ssm_parameter.db_password.value
 
+  # These database backup settings are just for testing. It is not recommended to use them in prodution.
   backup_retention_period = 0
   skip_final_snapshot     = true
 

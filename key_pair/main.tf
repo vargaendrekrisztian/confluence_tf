@@ -16,7 +16,8 @@ resource "aws_key_pair" "provisioner_instance_key_pair" {
   tags = {
     Name = join("-", [
       var.tag_prefix,
-      var.key_name
+      "key",
+      "pair"
     ])
   }
 

@@ -1,1 +1,1 @@
-provisioner_instance ansible_host=${inv_tmp_instance_public_ip}
+provisioner_instance ansible_host=${instance_public_ip}
